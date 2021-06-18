@@ -8,41 +8,39 @@ lazy val scala211 = "2.11.12"
 lazy val scala212 = "2.12.10"
 lazy val supportedScalaVersions = List(scala211, scala212)
 
+lazy val artifactoryUser: String = sys.props.getOrElse("ARTIFACTORY_USERNAME", "")
+lazy val artifactoryPassword: String = sys.props.getOrElse("ARTIFACTORY_PASSWORD", "")
+
 lazy val commonSettings = Defaults.coreDefaultSettings ++ Seq(
-  organization := "io.sentry",
-  version := "0.0.1-alpha05",
+  organization := "com.udacity.data",
+  version := "0.0.1-alpha05-SNAPSHOT",
   crossScalaVersions := supportedScalaVersions,
   scalacOptions ++= Seq("-target:jvm-1.8",
                         "-deprecation",
                         "-feature",
                         "-unchecked"),
   javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
+  resolvers ++= Seq(
+    "snapshots" at "https://udacity.jfrog.io/udacity/libs-snapshot-local",
+    DefaultMavenRepository,
+    Resolver.defaultLocal,
+    Resolver.mavenLocal),
+  publishTo := Some("snapshots" at "https://udacity.jfrog.io/udacity/libs-snapshot-local"),
+  credentials += Credentials("Artifactory Realm", "udacity.jfrog.io", artifactoryUser, artifactoryPassword),
   scalafmtOnCompile := true
 )
 
-lazy val publishSettings = Seq(
-  homepage := Some(url("https://github.com/getsentry/sentry-spark")),
-  licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT")),
-  publishMavenStyle := true,
-  publishArtifact in Test := false,
-  bintrayRepository := "sentry-spark",
-  scmInfo := Some(
-    ScmInfo(
-      browseUrl = url("https://github.com/getsentry/sentry-spark"),
-      connection = "scm:git:ssh://ithub.com:getsentry/sentry-spark.git",
-      devConnection = Some("scm:git:ssh://github.com:getsentry/sentry-spark.git")
-    )
-  ),
-  bintrayOrganization := Some("getsentry"),
-  developers := List(
-    Developer("abhiprasad", "Abhijeet Prasad", "aprasad@sentry.io", url("https://github.com/abhiprasad"))
-  )
+libraryDependencies ++= Seq(
+  "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
+  "org.apache.spark" %% "spark-streaming" % sparkVersion % "provided",
+  "io.sentry" % "sentry" % sentryVersion,
+  // Testing
+  "org.scalatest" %% "scalatest" % "3.0.8" % "test",
 )
 
 lazy val root: Project = project
   .in(file("."))
   .settings(commonSettings)
-  .settings(publishSettings)
   .settings(
     name := "sentry-spark",
     description := "Sentry Integration for Apache Spark",

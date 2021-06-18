@@ -1,0 +1,39 @@
+version: 2.1
+
+references:
+  defaults: &defaults
+    working_directory: ~/dev/sentry-spark
+    docker:
+      # https://github.com/udacity/dockerfile-wizard
+      - image: udacityci/crater-lake-build-deploy
+
+  save_sbt_cache: &save_sbt_cache
+    paths:
+      - "~/.m2"
+      - "~/.ivy2/cache"
+      - "~/.sbt"
+    key: sentry-spark-library-dependencies-{{ checksum "build.sbt" }}
+
+  restore_sbt_cache: &restore_sbt_cache
+    key: sentry-spark-library-dependencies-{{ checksum "build.sbt" }}
+
+
+jobs:
+  build-publish-jar:
+    <<: *defaults
+    steps:
+      - checkout
+      - restore_cache: *restore_sbt_cache
+      - run:
+          name: run clean compile package and publish
+          command: |
+            sbt -DARTIFACTORY_USERNAME=$ARTIFACTORY_USERNAME -DARTIFACTORY_PASSWORD=$ARTIFACTORY_PASSWORD clean compile package publish
+      - save_cache: *save_sbt_cache
+
+workflows:
+  version: 2
+  build-deploy:
+    jobs:
+      - build-publish-jar:
+          context: org-global
+
